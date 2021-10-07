@@ -86,7 +86,9 @@ namespace Ultimate_Splinterlands_Bot_V2
 
                             if (sleepUntil > DateTime.Now)
                             {
-                                Log.WriteToLog($"All accounts sleeping or currently active - wait until {sleepUntil}");
+                                Log.WriteToLog($"All accounts sleeping or currently active - wait until {sleepUntil.ToString().Pastel(Color.Red)}");
+                                string lMessage = $"USB v2: All accounts sleeping or currently active - wait until {sleepUntil}"; //dee to do: removed if tested good without intro
+                                Linenotify.lineNotify(lMessage); //dee
                                 sleepTime = (int)(sleepUntil - DateTime.Now).TotalMilliseconds;
                             }
                         }
@@ -136,8 +138,9 @@ namespace Ultimate_Splinterlands_Bot_V2
 
             Log.WriteToLog("Stopping bot...");
             await Task.WhenAll(instances);
-            _ = Task.Run(async () => Parallel.ForEach(Settings.SeleniumInstances, x => x.driver.Quit())).Result;
+            _ =Task.Run(async () => Parallel.ForEach(Settings.SeleniumInstances, x => x.driver.Quit())).Result;
             Log.WriteToLog("Bot stopped!");
+            Linenotify.lineNotify("USB v2: Bot stopped!"); //dee
         }
 
         static bool ReadConfig()
@@ -168,6 +171,9 @@ namespace Ultimate_Splinterlands_Bot_V2
                         break;
                     case "ECR_THRESHOLD":
                         Settings.ECRThreshold = Convert.ToInt32(temp[1]);
+                        break;
+                    case "TOKEN": //dee
+                        Settings.Token = temp[1]; //dee
                         break;
                     // legacy:
                     case "ERC_THRESHOLD":
@@ -226,6 +232,7 @@ namespace Ultimate_Splinterlands_Bot_V2
                 $"ECR_THRESHOLD: {Settings.ECRThreshold}{Environment.NewLine}" +
                 $"USE_API: {Settings.UseAPI}{Environment.NewLine}" +
                 $"HEADLESS: {Settings.Headless}{Environment.NewLine}" +
+                $"TOKEN: { Settings.Token}{Environment.NewLine}" + //dee
                 $"MAX_BROWSER_INSTANCES: {Settings.MaxBrowserInstances}{Environment.NewLine}");
             return true;
         }
@@ -258,12 +265,14 @@ namespace Ultimate_Splinterlands_Bot_V2
 
             if (Settings.BotInstances.Count > 0)
             {
-                Log.WriteToLog($"Loaded {Settings.BotInstances.Count} accounts!", Log.LogType.Success);
+                Log.WriteToLog($"Loaded {Settings.BotInstances.Count.ToString().Pastel(Color.Red)} accounts!", Log.LogType.Success); //dee modified color
+                Linenotify.lineNotify($"USB V2: Loaded {Settings.BotInstances.Count.ToString()} account(s)!"); //dee
                 return true;
             }
             else
             {
                 Log.WriteToLog($"Did not load any account", Log.LogType.CriticalError);
+                Linenotify.lineNotify("USB v2: Did not load any account. Please check the bot.");
                 return false;
             }
         }
@@ -277,7 +286,7 @@ namespace Ultimate_Splinterlands_Bot_V2
             }
 
             Settings.SeleniumInstances = new List<(OpenQA.Selenium.IWebDriver driver, bool isAvailable)>();
-            Log.WriteToLog($"Creating {Settings.MaxBrowserInstances} browser instances...");
+            Log.WriteToLog($"Creating {Settings.MaxBrowserInstances.ToString().Pastel(Color.Red)} browser instances...");
             for (int i = 0; i < Settings.MaxBrowserInstances; i++)
             {
                 Settings.SeleniumInstances.Add((SeleniumAddons.CreateSeleniumInstance(), true));

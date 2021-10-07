@@ -63,7 +63,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
 
             lock (_ConsoleLock)
             {
-                Console.WriteLine(messagePrefix + message.Pastel(textColor));
+                Console.WriteLine( messagePrefix + message.Pastel(textColor));
 
                 if (Settings.WriteLogToFile)
                 {
@@ -77,6 +77,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             var t = new TablePrinter("#", "Account", "Result", "Rating", "ECR", "QuestStatus");
             Settings.LogSummaryList.ForEach(x => t.AddRow(x.index, x.account, x.battleResult, x.rating, x.ECR, x.questStatus));
             Settings.LogSummaryList.Clear();
+
             lock (_ConsoleLock)
             {
                 t.Print();
