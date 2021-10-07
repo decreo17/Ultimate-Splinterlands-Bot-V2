@@ -716,7 +716,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             try
             {
                 var rating = driver.FindElement(By.XPath("//div[@class='progress__info']/span[@class='number_text']")).GetAttribute("innerHTML");
-                return rating;
+                return rating; //jones
             }
             catch (Exception ex)
             {
