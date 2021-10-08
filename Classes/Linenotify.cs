@@ -8,6 +8,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Net;
+using Pastel;
 
 
 namespace Ultimate_Splinterlands_Bot_V2.Classes
@@ -32,6 +33,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 using (var stream = request.GetRequestStream()) stream.Write(data, 0, data.Length);
                 var response = (HttpWebResponse)request.GetResponse();
                 var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                Console.WriteLine("Notification to line sent!".Pastel(Color.Green));
             }
             catch (Exception ex)
             {
