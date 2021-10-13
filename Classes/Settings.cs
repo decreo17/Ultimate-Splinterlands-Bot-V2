@@ -35,6 +35,8 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
         public static int ECRThreshold = 75;
         public static string[] BadQuests = new string[0];
 
+        public static string Token = ""; //dee
+
         public static string RentalBotDllPath = "";
         public static bool RentalBotActivated = false;
         public static int DaysToRent = 0;
