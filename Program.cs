@@ -111,7 +111,6 @@ namespace Ultimate_Splinterlands_Bot_V2
                                 //}
                             }
                         }
-
                         lock (_TaskLock)
                         {
                             nextBrowserInstance = ++nextBrowserInstance >= Settings.MaxBrowserInstances ? 0 : nextBrowserInstance;
