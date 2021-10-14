@@ -31,6 +31,8 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
         public static string[] BadQuests = new string[0];
 
         public static string Token = ""; //dee
+        public static string ErrorToken = ""; //dee
+        public static string RewardsToken = ""; //dee
 
         public static List<BotInstance> BotInstances { get; set; }
         public static List<(IWebDriver driver, bool isAvailable)> SeleniumInstances { get; set; }

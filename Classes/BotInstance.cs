@@ -110,7 +110,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                         return SleepUntil;
                     }
                     LogSummary.Account = Username;
-                    Log.WriteToLog($"{Email}: Username is {Username}");
+                    Log.WriteToLog($"{Email}: Username is {Username.Pastel(Color.Yellow)}");
                     Linenotify.lineNotify($"USB V2:{Email}: Username is {Username}");
                     UnknownUsername = false;
                 }
@@ -124,7 +124,8 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 LogSummary.ECR = $"{ecr} %";
                 // todo: add log with different colors in same line
                 Log.WriteToLog($"{Username}: Current Energy Capture Rate is { (ecr >= 50 ? ecr.ToString().Pastel(Color.Green) : ecr.ToString().Pastel(Color.Red)) }%");
-                Linenotify.lineNotify($"USB V2:{Username}: Current Energy Capture Rate is {(ecr >= 50 ? ecr.ToString() : ecr.ToString())}%");
+                string currentECR = $"Current Energy Capture Rate is { (ecr >= 50 ? ecr.ToString() : ecr.ToString()) }%";
+                Linenotify.lineNotify($"USB V2:{Username}: {currentECR}");
                 if (ecr < Settings.ECRThreshold)
                 {
                     Log.WriteToLog($"{Username}: ERC is below threshold of {Settings.ECRThreshold}% - skipping this account.", Log.LogType.Warning);
@@ -175,7 +176,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 if (team == null || (string)team["summoner_id"] == "")
                 {
                     Log.WriteToLog($"{Username}: API didn't find any team - Skipping Account", Log.LogType.CriticalError);
-                    Linenotify.lineNotify($"USB V2:{Username}: API didn't find any team - Skipping Account");
+                    Linenotify.lineErrorNotify($"USB V2:{Username}: API didn't find any team - Skipping Account");
                     SleepUntil = DateTime.Now.AddMinutes(Settings.SleepBetweenBattles / 2);
                     return SleepUntil;
                 }
@@ -192,7 +193,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                             break;
                         }
                         Log.WriteToLog($"{Username}: Can't seem to find btnRumble{Environment.NewLine}Skipping Account", Log.LogType.CriticalError);
-                        Linenotify.lineNotify($"USB V2:{Username}: Can't seem to find btnRumble{Environment.NewLine}Skipping Account");
+                        Linenotify.lineErrorNotify($"USB V2:{Username}: Can't seem to find btnRumble{Environment.NewLine}Skipping Account");
                         SleepUntil = DateTime.Now.AddMinutes(Settings.SleepBetweenBattles / 2);
                         return SleepUntil;
                     }
@@ -215,7 +216,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             catch (Exception ex)
             {
                 Log.WriteToLog($"{Username}: {ex}{Environment.NewLine}Skipping Account", Log.LogType.CriticalError);
-                Linenotify.lineNotify($"USB V2:{Username}There was an error, please check the bot. Skipping Account");
+                Linenotify.lineErrorNotify($"USB V2:{Username}There was an error, please check the bot. Skipping Account");
             }
             finally
             {
@@ -250,6 +251,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                     logTextBattleResult = $"You won! Reward: {decWon} DEC";
                     Log.WriteToLog($"{Username}: { logTextBattleResult.Pastel(Color.Green) }");
                     Linenotify.lineNotify($"USB V2:{Username}: { logTextBattleResult }");
+                    Linenotify.lineErrorNotify($"USB V2:{Username}: { logTextBattleResult }");
                     Log.WriteToLog($"{Username}: New rating is {rating} ({ ratingChange.Pastel(Color.Green) })");
                     Linenotify.lineNotify($"USB V2:{Username}: New rating is {rating} ({ ratingChange })");
                 }
@@ -525,7 +527,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             catch (Exception ex)
             {
                 Log.WriteToLog($"{Username}: Error at claiming season rewards: {ex}", Log.LogType.Error);
-                Linenotify.lineNotify($"USB V2:{Username}: Error at claiming season rewards: {ex}");
+                Linenotify.lineErrorNotify($"USB V2:{Username}: Error at claiming season rewards: {ex}");
             }
         }
 
@@ -611,7 +613,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             catch (Exception ex)
             {
                 Log.WriteToLog($"{Username}: Error at changing quest: {ex}", Log.LogType.Error);
-                Linenotify.lineNotify($"USB V2:{Username}: Error at changing quest: {ex}");
+                Linenotify.lineErrorNotify($"USB V2:{Username}: Error at changing quest: {ex}");
             }
         }
 
