@@ -88,20 +88,20 @@ namespace Ultimate_Splinterlands_Bot_V2
                                 //!Settings.BotInstances[Array.IndexOf(sleepInfo, x)].CurrentlyActive)
                                 //    .OrderBy(x => x).First();
 
-                            if (sleepUntil > DateTime.Now)
-                            {
-                                Log.WriteToLog($"All accounts sleeping or currently active - wait until {sleepUntil.ToString().Pastel(Color.Red)}");
-                                string lMessage = $"USB v2: All accounts sleeping or currently active - wait until {sleepUntil}"; //dee to do: removed if tested good without intro
-                                Linenotify.lineNotify(lMessage); //dee
-                                sleepTime = (int)(sleepUntil - DateTime.Now).TotalMilliseconds;
-                            }
-                        }
-                    }
+                            //if (sleepUntil > DateTime.Now)
+                            //{
+                            //    Log.WriteToLog($"All accounts sleeping or currently active - wait until {sleepUntil.ToString().Pastel(Color.Red)}");
+                            //    string lMessage = $"USB v2: All accounts sleeping or currently active - wait until {sleepUntil}"; //dee to do: removed if tested good without intro
+                            //    Linenotify.lineNotify(lMessage); //dee
+                            //    sleepTime = (int)(sleepUntil - DateTime.Now).TotalMilliseconds;
+                            //}
+                        //}
+                    //}
 
-                    if (sleepTime != 0)
-                    {
-                        await Task.Delay(sleepTime);
-                    }
+                    //if (sleepTime != 0)
+                    //{
+                    //    await Task.Delay(sleepTime);
+                    //}
                                 //if (sleepUntil > DateTime.Now)
                                 //{
                                 //    Log.WriteToLog($"All accounts sleeping or currently active - wait until {sleepUntil.ToString().Pastel(Color.Red)}");
@@ -111,7 +111,6 @@ namespace Ultimate_Splinterlands_Bot_V2
                                 //}
                             }
                         }
-
                         lock (_TaskLock)
                         {
                             nextBrowserInstance = ++nextBrowserInstance >= Settings.MaxBrowserInstances ? 0 : nextBrowserInstance;
@@ -192,6 +191,12 @@ namespace Ultimate_Splinterlands_Bot_V2
                         break;
                     case "TOKEN": //dee
                         Settings.Token = temp[1]; //dee
+                        break;
+                    case "ERRORTOKEN": //dee
+                        Settings.ErrorToken = temp[1]; //dee
+                        break;
+                    case "REWARDSTOKEN": //dee
+                        Settings.RewardsToken = temp[1]; //dee
                         break;
                     // legacy:
                     case "ERC_THRESHOLD":

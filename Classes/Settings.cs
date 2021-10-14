@@ -36,6 +36,18 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
         public static string[] BadQuests = new string[0];
 
         public static string Token = ""; //dee
+        public static string ErrorToken = ""; //dee
+        public static string RewardsToken = ""; //dee
+
+        public static string RentalBotDllPath = "";
+        public static bool RentalBotActivated = false;
+        public static int DaysToRent = 0;
+        public static int DesiredRentalPower = 0;
+        public static decimal MaxRentalPricePer500 = 0;
+        public static ObjectHandle RentalBot = null;
+        public static MethodInfo RentalBotMethodCheckRentals = null;
+        public static MethodInfo RentalBotMethodIsAvailable = null;
+        public static MethodInfo RentalBotMethodSetActive = null;
 
         public static string RentalBotDllPath = "";
         public static bool RentalBotActivated = false;
