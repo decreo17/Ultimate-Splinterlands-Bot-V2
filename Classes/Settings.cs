@@ -49,6 +49,16 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
         public static MethodInfo RentalBotMethodIsAvailable = null;
         public static MethodInfo RentalBotMethodSetActive = null;
 
+        public static string RentalBotDllPath = "";
+        public static bool RentalBotActivated = false;
+        public static int DaysToRent = 0;
+        public static int DesiredRentalPower = 0;
+        public static decimal MaxRentalPricePer500 = 0;
+        public static ObjectHandle RentalBot = null;
+        public static MethodInfo RentalBotMethodCheckRentals = null;
+        public static MethodInfo RentalBotMethodIsAvailable = null;
+        public static MethodInfo RentalBotMethodSetActive = null;
+
         public static List<BotInstance> BotInstances { get; set; }
         public static List<(IWebDriver driver, bool isAvailable)> SeleniumInstances { get; set; }
         public static List<(int index, string account, string battleResult, string rating, string ECR, string questStatus)> LogSummaryList { get; set; }
