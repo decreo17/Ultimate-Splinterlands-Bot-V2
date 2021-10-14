@@ -124,12 +124,12 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 LogSummary.ECR = $"{ecr} %";
                 // todo: add log with different colors in same line
                 Log.WriteToLog($"{Username}: Current Energy Capture Rate is { (ecr >= 50 ? ecr.ToString().Pastel(Color.Green) : ecr.ToString().Pastel(Color.Red)) }%");
-                string currentECR = $"Current Energy Capture Rate is { (ecr >= 50 ? ecr.ToString() : ecr.ToString()) }%";
+                string currentECR = $"Current Energy Capture Rate is { (ecr >= 50 ? ecr.ToString() : ecr.ToString()) }";
                 Linenotify.lineNotify($"USB V2:{Username}: {currentECR}");
                 if (ecr < Settings.ECRThreshold)
                 {
                     Log.WriteToLog($"{Username}: ERC is below threshold of {Settings.ECRThreshold}% - skipping this account.", Log.LogType.Warning);
-                    Linenotify.lineNotify($"USB V2:{Username}: ERC is below threshold of {Settings.ECRThreshold}% - skipping this account.");
+                    Linenotify.lineErrorNotify($"USB V2:{Username}: ERC is below threshold of {Settings.ECRThreshold} - skipping this account.");
                     SleepUntil = DateTime.Now.AddMinutes(Settings.SleepBetweenBattles / 2);
                     return SleepUntil;
                 }
