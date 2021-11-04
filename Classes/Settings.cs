@@ -1,8 +1,10 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using HiveAPI.CS;
+using Newtonsoft.Json.Linq;
 using OpenQA.Selenium;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.Remoting;
@@ -12,11 +14,22 @@ using System.Threading.Tasks;
 namespace Ultimate_Splinterlands_Bot_V2.Classes
 {
     public static class Settings
-    {         
+    {
+        public const string HIVE_NODE = "https://api.deathwing.me/";
+        public const string SPLINTERLANDS_APP = "splinterlands/0.7.139";
+        public static char[] Subset = "0123456789abcdefghijklmnopqrstuvwxyz".ToCharArray();
+        public static Random _Random = new Random();
+        public static CookieContainer CookieContainer = new();
+
         public static string StartupPath = "";
         public static bool DebugMode = false;
         public static bool WriteLogToFile = false;
 
+        public static bool LightningMode = false;
+        public static bool ShowBattleResults = true;
+        public static int Threads = 1;
+
+        public static bool BrowserMode = false;
         public static bool ChromeNoSandbox = false;
         public static bool Headless = false;
         public static string ChromeBinaryPath = "";
@@ -24,11 +37,18 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
         public static int MaxBrowserInstances = 2;
 
         public static bool UseAPI = true;
-        public static string APIUrl = "";
+        public static string PublicAPIUrl = "";
+        public static bool UsePrivateAPI = false;
+        public static string PrivateAPIUrl = "";
+        public static string PrivateAPIShop= "";
+        public static string PrivateAPIUsername= "";
+        public static string PrivateAPIPassword= "";
 
         public static bool PrioritizeQuest = true;
         public static bool ClaimQuestReward = false;
         public static bool ClaimSeasonReward = false;
+        public static bool DontClaimQuestNearHigherLeague = false;
+        public static bool AdvanceLeague = false;
         public static int SleepBetweenBattles = 30;
         public static int ECRThreshold = 75;
         public static string[] BadQuests = new string[0];
@@ -43,12 +63,16 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
         public static MethodInfo RentalBotMethodIsAvailable = null;
         public static MethodInfo RentalBotMethodSetActive = null;
 
-        public static List<BotInstance> BotInstances { get; set; }
+        public static bool RateLimited = false;
+        public static object RateLimitedLock = new object();
+        public static List<BotInstanceBrowser> BotInstancesBrowser { get; set; }
+        public static List<BotInstanceBlockchain> BotInstancesBlockchain { get; set; }
         public static List<(IWebDriver driver, bool isAvailable)> SeleniumInstances { get; set; }
         public static List<(int index, string account, string battleResult, string rating, string ECR, string questStatus)> LogSummaryList { get; set; }
 
         public readonly static HttpClient _httpClient = new HttpClient();
-        
+        public static CHived oHived;
+
         public static JArray CardsDetails;
         public static Dictionary<string, string> QuestTypes;
         public static Dictionary<string, string> Summoners;
