@@ -47,10 +47,10 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
         public string Key { get; init; } // only needed for plugins, not used by normal bot
         public bool CurrentlyActive { get; private set; }
 
-        private object _activeLock;
+        private readonly object _activeLock;
         private DateTime SleepUntil;
         private bool UnknownUsername;
-        private LogSummary LogSummary;
+        private readonly LogSummary LogSummary;
 
         public BotInstanceBrowser(string username, string password, int index, string key = "")
         {
@@ -73,16 +73,16 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             _activeLock = new object();
         }
 
-        public async Task<DateTime> DoBattleAsync(int browserInstance, bool logoutNeeded, int botInstance)
+        public async Task<(DateTime sleepTime, bool battleFailed)> DoBattleAsync(int browserInstance, bool logoutNeeded, int botInstance, bool unbanMode = false)
         {
             Log.WriteToLog($"Browser #{ browserInstance}", debugOnly: true);
-            IWebDriver driver = Settings.SeleniumInstances[browserInstance].driver;
+            IWebDriver driver = !unbanMode ? Settings.SeleniumInstances[browserInstance].driver : SeleniumAddons.CreateSeleniumInstance();
             lock (_activeLock)
             {
                 if (CurrentlyActive)
                 {
                     Log.WriteToLog($"{Username} Skipped account because it is currently active", debugOnly: true);
-                    return DateTime.Now.AddSeconds(30);
+                    return (DateTime.Now.AddSeconds(30), false);
                 }
                 CurrentlyActive = true;
             }
@@ -92,12 +92,12 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 if (SleepUntil > DateTime.Now)
                 {
                     Log.WriteToLog($"{Username}: is sleeping until {SleepUntil.ToString().Pastel(Color.Red)}");
-                    return SleepUntil;
+                    return (SleepUntil, false);
                 }
                 if (!Login(driver, logoutNeeded))
                 {
                     SleepUntil = DateTime.Now.AddMinutes(5);
-                    return SleepUntil;
+                    return (SleepUntil, false);
                 }
                 ClosePopups(driver);
                 if (UnknownUsername)
@@ -108,7 +108,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                         Username = "";
                         Log.WriteToLog($"{Email}: { "Error reading username, will try again in 3 minutes".Pastel(Color.Red) }");
                         SleepUntil = DateTime.Now.AddMinutes(3);
-                        return SleepUntil;
+                        return (SleepUntil, false);
                     }
                     LogSummary.Account = Username;
                     Log.WriteToLog($"{Email}: Username is {Username.Pastel(Color.Yellow)}");
@@ -118,7 +118,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 ClosePopups(driver);
                 NavigateToBattlePage(driver);
 
-                if (Settings.RentalBotActivated && Convert.ToBoolean(Settings.RentalBotMethodIsAvailable.Invoke(Settings.RentalBot.Unwrap(), new object[] { })))
+                if (!unbanMode && Settings.RentalBotActivated && Convert.ToBoolean(Settings.RentalBotMethodIsAvailable.Invoke(Settings.RentalBot.Unwrap(), Array.Empty<object>())))
                 {
                     Settings.RentalBotMethodSetActive.Invoke(Settings.RentalBot.Unwrap(), new object[] { true });
                     try
@@ -139,11 +139,11 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                     }
                 }
 
-                var quest = await API.GetPlayerQuestAsync(Username);
-                Card[] cards = await API.GetPlayerCardsAsync(Username);
+                var quest = await SplinterlandsAPI.GetPlayerQuestAsync(Username);
+                Card[] cards = await SplinterlandsAPI.GetPlayerCardsAsync(Username);
                 if (Settings.UsePrivateAPI && Settings._Random.Next(0, 10) > 5)
                 {
-                    API.UpdateCardsForPrivateAPI(Username, cards);
+                    BattleAPI.UpdateCardsForPrivateAPI(Username, cards);
                 }
                 Log.WriteToLog($"{Username}: Deck size: {(cards.Length - 1).ToString().Pastel(Color.Red)} (duplicates filtered)"); // Minus 1 because phantom card array has an empty string in it
 
@@ -174,11 +174,11 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 LogSummary.ECR = $"{ecr} %";
                 // todo: add log with different colors in same line
                 Log.WriteToLog($"{Username}: Current Energy Capture Rate is { (ecr >= 50 ? ecr.ToString().Pastel(Color.Green) : ecr.ToString().Pastel(Color.Red)) }%");
-                if (ecr < Settings.ECRThreshold)
+                if (ecr < Settings.StopBattleBelowECR)
                 {
-                    Log.WriteToLog($"{Username}: ERC is below threshold of {Settings.ECRThreshold}% - skipping this account.", Log.LogType.Warning);
+                    Log.WriteToLog($"{Username}: ECR is below threshold of {Settings.StopBattleBelowECR}% - skipping this account.", Log.LogType.Warning);
                     SleepUntil = DateTime.Now.AddMinutes(Settings.SleepBetweenBattles / 2);
-                    return SleepUntil;
+                    return (SleepUntil, false);
                 }
 
                 ClosePopups(driver);
@@ -191,9 +191,16 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 {
                     if (counter++ > 7)
                     {
-                        Log.WriteToLog($"{Username}: Can't seem to find an enemy{Environment.NewLine}Skipping Account", Log.LogType.CriticalError);
+                        if (unbanMode)
+                        {
+                            Log.WriteToLog($"{Username}: Account is still banned", Log.LogType.Warning);
+                        }
+                        else
+                        {
+                            Log.WriteToLog($"{Username}: Can't seem to find an enemy{Environment.NewLine}Skipping Account", Log.LogType.CriticalError);
+                        }
                         SleepUntil = DateTime.Now.AddMinutes(Settings.SleepBetweenBattles / 2);
-                        return SleepUntil;
+                        return (SleepUntil, true);
                     }
                     // check if this is correct modal;
                 }
@@ -205,15 +212,20 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 SleepUntil = DateTime.Now.AddMinutes(Settings.SleepBetweenBattles);
                 WaitForLoadingBanner(driver);
 
-                var team = await API.GetTeamFromAPIAsync(mana, rulesets, allowedSplinters, cards, quest.quest, quest.questLessDetails, Username);
+                var team = await BattleAPI.GetTeamFromAPIAsync(mana, rulesets, allowedSplinters, cards, quest.quest, quest.questLessDetails, Username);
                 if (team == null || (string)team["summoner_id"] == "")
                 {
                     Log.WriteToLog($"{Username}: API didn't find any team - Skipping Account", Log.LogType.CriticalError);
                     SleepUntil = DateTime.Now.AddMinutes(Settings.SleepBetweenBattles / 2);
-                    return SleepUntil;
+                    return (SleepUntil, true);
                 }
 
-                Log.LogTeamToTable(team, mana, rulesets);
+                if (Settings.ShowAPIResponse)
+                {
+                    Log.WriteToLog($"{Username}: API Response:");
+                    Log.LogTeamToTable(team, mana, rulesets);
+                }
+                
                 SelectTeam(driver, team);
 
                 counter = 0;
@@ -228,7 +240,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                         }
                         Log.WriteToLog($"{Username}: Can't seem to find btnRumble{Environment.NewLine}Skipping Account", Log.LogType.CriticalError);
                         SleepUntil = DateTime.Now.AddMinutes(Settings.SleepBetweenBattles / 2);
-                        return SleepUntil;
+                        return (SleepUntil, true);
                     }
                 }
 
@@ -260,8 +272,12 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 {
                     CurrentlyActive = false;
                 }
+                if (unbanMode)
+                {
+                    driver.Quit();
+                }
             }
-            return SleepUntil;
+            return (SleepUntil, false);
         }
 
         private void AdvanceLeague(IWebDriver driver, string currentRating)
@@ -316,7 +332,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                     logTextBattleResult = $"You lost :(";
                     Log.WriteToLog($"{Username}: { logTextBattleResult.Pastel(Color.Red) }");
                     Log.WriteToLog($"{Username}: New rating is {rating} ({ ratingChange.Pastel(Color.Red) })");
-                    API.ReportLoss(winner, Username);
+                    BattleAPI.ReportLoss(winner, Username);
                 }
             }
             else
@@ -499,7 +515,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             return (string)Settings.CardsDetails[Convert.ToInt32(id) - 1]["color"];
         }
 
-        private int GetMana(IWebDriver driver)
+        private static int GetMana(IWebDriver driver)
         {
             driver.WaitForWebsiteLoadedAndElementShown(By.CssSelector("div.col-md-12 > div.mana-cap__icon"));
             Thread.Sleep(100);
@@ -508,13 +524,13 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             return mana;
         }
 
-        private string GetRulesets(IWebDriver driver)
+        private static string GetRulesets(IWebDriver driver)
         {
-            string rulesets = String.Join("|", driver.FindElements(By.CssSelector("div.combat__rules > div.row > div>  img"))
+            string rulesets = string.Join("|", driver.FindElements(By.CssSelector("div.combat__rules > div.row > div>  img"))
                     .Select(x => x.GetAttribute("data-original-title").Split(':')[0].Trim()));
             return rulesets;
         }
-        private string[] GetAllowedSplinters(IWebDriver driver)
+        private static string[] GetAllowedSplinters(IWebDriver driver)
         {
             string[] splinters = driver.FindElements(By.CssSelector("div.col-sm-4 > img"))
                 .Where(x => x.GetAttribute("data-original-title").Split(':')[1].Trim() == "Active")
@@ -563,9 +579,11 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                     driver.ClickElementOnPage(By.Id("claim-btn"));
                     Thread.Sleep(5000);
                     WaitForLoadingBanner(driver);
-                    Thread.Sleep(3000);
+                    driver.WaitForWebsiteLoadedAndElementShown(By.ClassName("card_img"));
+                    driver.ExecuteJavaScript("revealAll();");
+                    Thread.Sleep(10000);
                     driver.Navigate().Refresh();
-                    Thread.Sleep(5000);
+                    Thread.Sleep(2000);
                     WaitForLoadingBanner(driver);
                     Thread.Sleep(10000);
                     ClosePopups(driver);
@@ -602,12 +620,12 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                         // todo: check if league can be reached
                         int rating = Convert.ToInt32(currentRating.Replace(".", "").Replace(",", ""));
                         int power = (int)Convert.ToDecimal(driver.FindElement(By.CssSelector("div#power_progress div.progress__info span.number_text")).Text, CultureInfo.InvariantCulture);
-                        bool waitForHigherLeague = (rating is >= 300 and < 400) && (power is >= 1000 || (Settings.RentalBotActivated && Settings.DesiredRentalPower >= 1000)) || // bronze 2
-                            (rating is >= 550 and < 700) && (power is >= 5000 || (Settings.RentalBotActivated && Settings.DesiredRentalPower >= 5000)) || // bronze 1 
-                            (rating is >= 900 and < 1000) && (power is >= 15000 || (Settings.RentalBotActivated && Settings.DesiredRentalPower >= 15000)) || // silver 3
-                            (rating is >= 1200 and < 1300) && (power is >= 40000 || (Settings.RentalBotActivated && Settings.DesiredRentalPower >= 40000)) || // silver 2
-                            (rating is >= 1500 and < 1600) && (power is >= 70000 || (Settings.RentalBotActivated && Settings.DesiredRentalPower >= 70000)) || // silver 1
-                            (rating is >= 1800 and < 1900) && (power is >= 100000 || (Settings.RentalBotActivated && Settings.DesiredRentalPower >= 100000)); // gold 
+                        bool waitForHigherLeague = (rating is >= 300 and < 400) && (power is >= 1000 || (Settings.WaitForMissingCPAtQuestClaim && power >= (0.1 * 1000))) || // bronze 2
+                            (rating is >= 600 and < 700) && (power is >= 5000 || (Settings.WaitForMissingCPAtQuestClaim && power >= (0.2 * 5000))) || // bronze 1 
+                            (rating is >= 840 and < 1000) && (power is >= 15000 || (Settings.WaitForMissingCPAtQuestClaim && power >= (0.5 * 15000))) || // silver 3
+                            (rating is >= 1200 and < 1300) && (power is >= 40000 || (Settings.WaitForMissingCPAtQuestClaim && power >= (0.8 * 40000))) || // silver 2
+                            (rating is >= 1500 and < 1600) && (power is >= 70000 || (Settings.WaitForMissingCPAtQuestClaim && power >= (0.85 * 70000))) || // silver 1
+                            (rating is >= 1800 and < 1900) && (power is >= 100000 || (Settings.WaitForMissingCPAtQuestClaim && power >= (0.9 * 100000))); // gold 
 
                         if (waitForHigherLeague)
                         {
@@ -786,7 +804,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             return "unknown";
         }
 
-        private bool Login(IWebDriver driver, bool logoutNeeded)
+        public bool Login(IWebDriver driver, bool logoutNeeded)
         {
             Log.WriteToLog($"{ (UnknownUsername ? Email : Username) }: Trying to login...");
             driver.Navigate().GoToUrl("https://splinterlands.com/");
@@ -845,7 +863,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             return true;
         }
 
-        private void WaitForLoadingBanner(IWebDriver driver)
+        private static void WaitForLoadingBanner(IWebDriver driver)
         {
             do
             {

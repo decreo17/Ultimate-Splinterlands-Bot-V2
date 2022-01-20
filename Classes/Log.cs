@@ -12,7 +12,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
 {
     class Log
     {
-        private static object _ConsoleLock = new object();
+        private static readonly object _ConsoleLock = new();
         public enum LogType
         {
             Success,
@@ -76,19 +76,26 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
 
         public static void LogBattleSummaryToTable()
         {
-            var t = new TablePrinter("#", "Account", "Result", "Rating", "ECR", "QuestStatus");
-            Settings.LogSummaryList.ForEach(x => t.AddRow(x.index, x.account, x.battleResult, x.rating, x.ECR, x.questStatus));
-            Settings.LogSummaryList.Clear();
-            lock (_ConsoleLock)
+            try
             {
-                t.Print();
+                var t = new TablePrinter("#", "Account", "Result", "Rating", "ECR", "QuestStatus");
+                Settings.LogSummaryList.ForEach(x => t.AddRow(x.index, x.account, x.battleResult, x.rating, x.ECR, x.questStatus));
+                Settings.LogSummaryList.Clear();
+                lock (_ConsoleLock)
+                {
+                    t.Print();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.WriteToLog("Error at Battle Summary: " + ex.ToString(), LogType.Error);
             }
         }
 
         public static void LogTeamToTable(JToken team, int mana, string rulesets)
         {
             var t = new TablePrinter("Mana", "Rulesets", "Quest Prio", "Win %", "Team Rank");
-            t.AddRow(mana, rulesets, team["play_for_quest"], Convert.ToDouble(((string)team["summoner_wins"]).Replace(",", "."), CultureInfo.InvariantCulture).ToString("N3"), team["teamRank"]);
+            t.AddRow(mana, rulesets, team["play_for_quest"], (Convert.ToDouble(((string)team["summoner_wins"]).Replace(",", "."), CultureInfo.InvariantCulture) * 100).ToString("N2"), team["teamRank"]);
             lock (_ConsoleLock)
             {
                 t.Print();
@@ -96,7 +103,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
             t = new TablePrinter("Card", "ID", "Name", "Element");
             t.AddRow("Summoner", (string)team["summoner_id"], (string)Settings.CardsDetails[((int)team["summoner_id"]) - 1]["name"],
             ((string)Settings.CardsDetails[((int)team["summoner_id"]) - 1]["color"])
-            .Replace("Red", "Fire").Replace("Blue", "Water").Replace("White", "Life").Replace("Black", "Death").Replace("Green", "Earth"));
+            .Replace("Red", "Fire").Replace("Blue", "Water").Replace("White", "Life").Replace("Black", "Death").Replace("Green", "Earth").Replace("Gold", "Dragon"));
             for (int i = 1; i < 7; i++)
             {
                 if ((string)team[$"monster_{i}_id"] == "")
@@ -105,7 +112,8 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
                 }
                 t.AddRow($"Monster #{i}", (string)team[$"monster_{i}_id"], (string)Settings.CardsDetails[((int)team[$"monster_{i}_id"]) - 1]["name"],
                 ((string)Settings.CardsDetails[((int)team[$"monster_{i}_id"]) - 1]["color"])
-                .Replace("Red", "Fire").Replace("Blue", "Water").Replace("White", "Life").Replace("Black", "Death").Replace("Green", "Earth").Replace("Gray", "Neutral"));
+                .Replace("Red", "Fire").Replace("Blue", "Water").Replace("White", "Life").Replace("Black", "Death").Replace("Green", "Earth")
+                .Replace("Gray", "Neutral").Replace("Gold", "Dragon"));
             }
 
             lock (_ConsoleLock)
@@ -120,10 +128,11 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
         public static void WriteStartupInfoToLog()
         {
             WriteToLog("--------------------------------------------------------------");
-            WriteToLog("Ultimate Splinderlands Bot V2 by PC Jones");
+            WriteToLog("Ultimate Splinterlands Bot V2 by PC Jones");
             WriteToLog("Join the telegram group https://t.me/ultimatesplinterlandsbot");
             WriteToLog("Join the discord server https://discord.gg/hwSr7KNGs9");
             WriteToLog("               Close this window to stop the bot");
+            WriteToLog("   Or write stop and press enter to stop the bot");
             WriteToLog("-------------------------------------------------------------");
         }
 
@@ -133,7 +142,7 @@ namespace Ultimate_Splinterlands_Bot_V2.Classes
         public static void WriteSupportInformationToLog()
         {
             WriteToLog("-------------------------------------------------------------");
-            WriteToLog("Ultimate Splinderlands Bot V2 by PC Jones");
+            WriteToLog("Ultimate Splinterlands Bot V2 by PC Jones");
             WriteToLog("Join the telegram group https://t.me/ultimatesplinterlandsbot");
             WriteToLog("Join the discord server https://discord.gg/hwSr7KNGs9");
             WriteToLog("-------------------------------------------------------------");
